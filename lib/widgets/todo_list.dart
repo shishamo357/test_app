@@ -1,64 +1,71 @@
 import 'package:flutter/material.dart';
 
-import '../models/todo.dart'; // 表示に使うTodoデータ
-import '../widgets/todo_card.dart'; // 1件分の表示はTodoCardに任せる
+import '../models/todo.dart'; // 作成したTodoクラス
+import '../services/todo_service.dart'; // データ保存サービス
+import '../widgets/todo_card.dart'; // 作成したTodoCardウィジェット
 
 class TodoList extends StatefulWidget {
-  const TodoList({super.key});
+  const TodoList({super.key, required this.todoService});
+
+  final TodoService todoService; // getTodos/saveTodos を呼べるように受け取ろう
 
   @override
   State<TodoList> createState() => TodoListState();
 }
 
 class TodoListState extends State<TodoList> {
-  // ここにTodoを追加して、リスト表示が増えることを確認しよう
-  List<Todo> todos = [
-    Todo(
-      title: '大学の単位認定試験試験',
-      detail: '２月２４日まで',
-      dueDate: DateTime(2026, 2, 21),
-      isCompleted: false,
-    ),
-    Todo(
-      title: '買い物',
-      detail: 'ファイル、ケース、弁当',
-      dueDate: DateTime(2025, 1, 10),
-      isCompleted: true,
-    ),
-    Todo(
-      title: 'アルバイト',
-      detail: '日、水、木曜日の６時から１３時まで',
-      dueDate: DateTime(2025, 1, 12),
-      isCompleted: false,
-    ),
-    Todo(
-      title: '友達との約束',
-      detail: '旅行に行く',
-      dueDate: DateTime(2025, 1, 20),
-      isCompleted: false,
-    ),
-    Todo(
-      title: '開発',
-      detail: 'アプリ開発',
-      dueDate: DateTime(2025, 1, 9),
-      isCompleted: true,
-    ),
-  ];
+  List<Todo> _todos = [];
+  bool _isLoading = true;
 
-  /// 新規Todoをリストに追加（追加画面から呼ばれる）
-  void addTodo(Todo todo) {
-    setState(() => todos.add(todo));
+  @override
+  void initState() {
+    super.initState();
+    // 状態管理：表示データは TodoService（永続化）を唯一のソースとして読み込む
+    _loadTodos();
+  }
+
+  Future<void> _loadTodos() async {
+    // 端末保存から読み込んで、画面に反映しよう
+    final todos = await widget.todoService.getTodos();
+    setState(() {
+      _todos = todos;
+      _isLoading = false;
+    });
+  }
+
+  // 追加画面から呼ばれる：リストに追加して保存まで行おう
+  void addTodo(Todo newTodo) async {
+    setState(() => _todos.add(newTodo));
+    await widget.todoService.saveTodos(_todos);
+  }
+
+  // チェック（完了）ボタンから呼ばれる：完了状態をトグルして保存（状態管理・永続化）
+  Future<void> _toggleComplete(Todo todo) async {
+    setState(() {
+      final i = _todos.indexWhere((t) => t.id == todo.id);
+      if (i >= 0) _todos[i] = todo.copyWith(isCompleted: !todo.isCompleted);
+    });
+    await widget.todoService.saveTodos(_todos);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      // 読み込み中はローディング表示にしよう
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return ListView.builder(
-      itemCount: todos.length, // 表示する件数をtodosに合わせよう
+      itemCount: _todos.length,
       itemBuilder: (context, index) {
-        // index番目のTodoを取り出して、TodoCardに渡して表示しよう
+        final todo = _todos[index];
         return Padding(
-          padding: const EdgeInsets.all(8.0), // カード同士がくっつかないよう余白をつけよう
-          child: TodoCard(todo: todos[index]),
+          padding: const EdgeInsets.all(8.0),
+          child: TodoCard(
+            todo: todo,
+            // チェックボタンを押したら _deleteTodo が呼ばれるように渡そう
+            onToggle: () => _toggleComplete(todo),
+          ),
         );
       },
     );

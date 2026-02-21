@@ -1,30 +1,28 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Todoアプリのウィジェットテスト
+// アプリが起動し、一覧画面が表示されることを確認する
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:test_app/main.dart';
+import 'package:test_app/services/todo_service.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() async {
+    // テスト用に SharedPreferences をモック（必須）
+    SharedPreferences.setMockInitialValues({});
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('Todoアプリが起動し一覧画面が表示される', (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final todoService = TodoService(prefs);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpWidget(MyApp(todoService: todoService));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // 一覧画面の AppBar と FAB が表示されていること
+    expect(find.text('TODOリスト'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
   });
 }
