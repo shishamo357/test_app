@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/date_symbol_data_local.dart';
 
 import '../models/todo.dart'; // 表示に使うTodoデータ
 import '../widgets/todo_card.dart'; // 1件分の表示はTodoCardに任せる
@@ -13,7 +12,7 @@ class TodoList extends StatefulWidget {
 
 class TodoListState extends State<TodoList> {
   // ここにTodoを追加して、リスト表示が増えることを確認しよう
-  final List<Todo> todos = [
+  List<Todo> todos = [
     Todo(
       title: '大学の単位認定試験試験',
       detail: '２月２４日まで',
@@ -34,7 +33,7 @@ class TodoListState extends State<TodoList> {
     ),
     Todo(
       title: '友達との約束',
-      detail: '土曜日に映画を見に行く',
+      detail: '旅行に行く',
       dueDate: DateTime(2025, 1, 20),
       isCompleted: false,
     ),
@@ -45,6 +44,11 @@ class TodoListState extends State<TodoList> {
       isCompleted: true,
     ),
   ];
+
+  /// 新規Todoをリストに追加（追加画面から呼ばれる）
+  void addTodo(Todo todo) {
+    setState(() => todos.add(todo));
+  }
 
   @override
   Widget build(BuildContext context) {
